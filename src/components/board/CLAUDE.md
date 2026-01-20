@@ -7,6 +7,5 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
-| #925 | 3:26 PM | 🟣 | Card Click Handler Propagated to KanbanCard Components | ~441 |
-| #924 | " | 🟣 | Card Click Handler Added to Kanban Column | ~367 |
+| #930 | 3:27 PM | 🟣 | Card Click Handler Passed to Kanban Column Component | ~422 |
 </claude-mem-context>

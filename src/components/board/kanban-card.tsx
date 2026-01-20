@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Calendar, CheckSquare, Clock, AlertCircle } from 'lucide-react'
+import { Calendar, CheckSquare, Clock, AlertCircle, Cloud } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format, isPast, isToday } from 'date-fns'
 import type { BoardCard, CardPriority, PRIORITY_COLORS } from '@/types/board'
@@ -156,6 +156,20 @@ export function KanbanCard({ card, isDragging = false, onClick }: KanbanCardProp
                 {Math.floor(card.time_logged_minutes / 60)}h{' '}
                 {card.time_logged_minutes % 60}m
               </span>
+            )}
+
+            {/* Google Tasks Sync Indicator */}
+            {card.google_task_id && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="flex items-center gap-1 text-blue-500">
+                      <Cloud className="h-3 w-3" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Synced with Google Tasks</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
 

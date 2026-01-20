@@ -38,6 +38,7 @@ export interface BoardCard {
   created_at: string
   updated_at: string
   completed_at: string | null
+  google_task_id?: string | null
   labels?: CardLabel[]
   assignees?: CardAssignee[]
   subtask_count?: number
