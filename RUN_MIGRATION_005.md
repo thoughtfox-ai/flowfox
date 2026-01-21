@@ -37,21 +37,22 @@ This is a comprehensive migration that converts the entire user ID system from U
    - Subtasks, card_dependencies, time_entries, recurring_tasks
    - Activities, notifications, notification_preferences, Google Tasks sync tables
 
-2. **Drops ALL 17 foreign key constraints** that reference `users(id)`
+2. **Drops ALL 14 foreign key constraints** that reference `users(id)`
 
 3. **Converts `users.id`** from UUID → TEXT
 
-4. **Converts ALL 17 foreign key columns** from UUID → TEXT:
+4. **Converts ALL 14 foreign key columns** from UUID → TEXT:
    - workspace_members.user_id, board_members.user_id
    - workspaces.created_by, boards.created_by, cards.created_by
    - google_task_list_mappings.user_id, card_assignments.user_id
    - subtasks.assignee_id, card_dependencies.created_by
    - time_entries.user_id, recurring_tasks.created_by
    - activities.user_id, notifications.user_id
-   - notification_preferences.user_id, google_task_sync_state.user_id
-   - google_sync_queue.user_id, google_sync_audit_log.user_id
+   - notification_preferences.user_id
 
-5. **Re-adds ALL 17 foreign key constraints**
+   Note: google_task_sync_state, google_sync_queue, and google_sync_audit_log tables do NOT have user_id columns. They only have card_id and use RLS policies with EXISTS subqueries to check board membership.
+
+5. **Re-adds ALL 14 foreign key constraints**
 
 6. **Updates `current_user_id()` function** to return TEXT instead of UUID
 

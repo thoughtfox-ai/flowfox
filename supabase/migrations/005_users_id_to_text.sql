@@ -125,9 +125,7 @@ ALTER TABLE recurring_tasks DROP CONSTRAINT IF EXISTS recurring_tasks_created_by
 ALTER TABLE activities DROP CONSTRAINT IF EXISTS activities_user_id_fkey;
 ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_user_id_fkey;
 ALTER TABLE notification_preferences DROP CONSTRAINT IF EXISTS notification_preferences_user_id_fkey;
-ALTER TABLE google_task_sync_state DROP CONSTRAINT IF EXISTS google_task_sync_state_user_id_fkey;
-ALTER TABLE google_sync_queue DROP CONSTRAINT IF EXISTS google_sync_queue_user_id_fkey;
-ALTER TABLE google_sync_audit_log DROP CONSTRAINT IF EXISTS google_sync_audit_log_user_id_fkey;
+-- Note: google_task_sync_state, google_sync_queue, google_sync_audit_log do NOT have user_id columns
 
 -- Step 3: Change users.id column type from UUID to TEXT
 ALTER TABLE users ALTER COLUMN id DROP DEFAULT;
@@ -148,9 +146,7 @@ ALTER TABLE recurring_tasks ALTER COLUMN created_by TYPE TEXT USING created_by::
 ALTER TABLE activities ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
 ALTER TABLE notifications ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
 ALTER TABLE notification_preferences ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
-ALTER TABLE google_task_sync_state ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
-ALTER TABLE google_sync_queue ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
-ALTER TABLE google_sync_audit_log ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
+-- Note: google_task_sync_state, google_sync_queue, google_sync_audit_log do NOT have user_id columns
 
 -- Step 5: Re-add ALL foreign key constraints
 ALTER TABLE workspace_members
@@ -209,17 +205,8 @@ ALTER TABLE notification_preferences
   ADD CONSTRAINT notification_preferences_user_id_fkey
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
-ALTER TABLE google_task_sync_state
-  ADD CONSTRAINT google_task_sync_state_user_id_fkey
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-
-ALTER TABLE google_sync_queue
-  ADD CONSTRAINT google_sync_queue_user_id_fkey
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-
-ALTER TABLE google_sync_audit_log
-  ADD CONSTRAINT google_sync_audit_log_user_id_fkey
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+-- Note: google_task_sync_state, google_sync_queue, google_sync_audit_log do NOT have user_id columns
+-- These tables only have card_id and use RLS policies with EXISTS subqueries to check board membership
 
 -- Step 6: Update current_user_id() function to return TEXT instead of UUID
 CREATE OR REPLACE FUNCTION current_user_id()
