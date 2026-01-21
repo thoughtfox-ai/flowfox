@@ -29,14 +29,18 @@ Google OAuth returns user IDs as strings (e.g., "117492150812345678901"), but yo
 
 ## What This Migration Does
 
-1. Drops RLS policies on `users` table (prevents type alteration errors)
-2. Drops all foreign key constraints that reference `users(id)`
+1. Drops all 4 RLS policies on `users` table (prevents type alteration errors)
+2. Drops all 14 foreign key constraints that reference `users(id)` from:
+   - workspace_members, board_members, workspaces, boards, cards
+   - google_task_list_mappings, card_assignments, subtasks
+   - card_dependencies, time_entries, recurring_tasks
+   - activities, notifications, notification_preferences
 3. Converts `users.id` from UUID → TEXT
-4. Converts all related foreign key columns (user_id, created_by) from UUID → TEXT
-5. Re-adds all foreign key constraints
+4. Converts all 14 foreign key columns from UUID → TEXT
+5. Re-adds all 14 foreign key constraints
 6. Updates `current_user_id()` function to return TEXT instead of UUID
-7. Updates helper functions to work with TEXT user IDs
-8. Re-creates RLS policies with TEXT comparisons
+7. Updates 3 helper functions to work with TEXT user IDs
+8. Re-creates all 4 RLS policies with TEXT comparisons
 
 ## Expected Output
 
