@@ -209,6 +209,9 @@ ALTER TABLE notification_preferences
 -- These tables only have card_id and use RLS policies with EXISTS subqueries to check board membership
 
 -- Step 6: Update current_user_id() function to return TEXT instead of UUID
+-- Must drop first because PostgreSQL doesn't allow changing return type
+DROP FUNCTION IF EXISTS current_user_id();
+
 CREATE OR REPLACE FUNCTION current_user_id()
 RETURNS TEXT AS $$
 BEGIN
