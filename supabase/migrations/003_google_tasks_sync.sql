@@ -5,7 +5,7 @@
 -- Maps FlowFox boards to Google Task Lists
 CREATE TABLE IF NOT EXISTS google_task_list_mappings (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   board_id UUID NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
   google_task_list_id TEXT NOT NULL,
   google_task_list_title TEXT NOT NULL,
@@ -113,25 +113,25 @@ DROP POLICY IF EXISTS "Users can view their own task list mappings" ON google_ta
 CREATE POLICY "Users can view their own task list mappings"
   ON google_task_list_mappings
   FOR SELECT
-  USING (auth.uid() = user_id);
+  USING (current_user_id() = user_id);
 
 DROP POLICY IF EXISTS "Users can create their own task list mappings" ON google_task_list_mappings;
 CREATE POLICY "Users can create their own task list mappings"
   ON google_task_list_mappings
   FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (current_user_id() = user_id);
 
 DROP POLICY IF EXISTS "Users can update their own task list mappings" ON google_task_list_mappings;
 CREATE POLICY "Users can update their own task list mappings"
   ON google_task_list_mappings
   FOR UPDATE
-  USING (auth.uid() = user_id);
+  USING (current_user_id() = user_id);
 
 DROP POLICY IF EXISTS "Users can delete their own task list mappings" ON google_task_list_mappings;
 CREATE POLICY "Users can delete their own task list mappings"
   ON google_task_list_mappings
   FOR DELETE
-  USING (auth.uid() = user_id);
+  USING (current_user_id() = user_id);
 
 -- google_task_sync_state
 ALTER TABLE google_task_sync_state ENABLE ROW LEVEL SECURITY;
@@ -145,7 +145,7 @@ CREATE POLICY "Users can view sync state for their cards"
       SELECT 1 FROM cards c
       JOIN boards b ON c.board_id = b.id
       JOIN board_members bm ON b.id = bm.board_id
-      WHERE c.id = card_id AND bm.user_id = auth.uid()
+      WHERE c.id = card_id AND bm.user_id = current_user_id()
     )
   );
 
@@ -158,7 +158,7 @@ CREATE POLICY "Users can create sync state for their cards"
       SELECT 1 FROM cards c
       JOIN boards b ON c.board_id = b.id
       JOIN board_members bm ON b.id = bm.board_id
-      WHERE c.id = card_id AND bm.user_id = auth.uid()
+      WHERE c.id = card_id AND bm.user_id = current_user_id()
     )
   );
 
@@ -171,7 +171,7 @@ CREATE POLICY "Users can update sync state for their cards"
       SELECT 1 FROM cards c
       JOIN boards b ON c.board_id = b.id
       JOIN board_members bm ON b.id = bm.board_id
-      WHERE c.id = card_id AND bm.user_id = auth.uid()
+      WHERE c.id = card_id AND bm.user_id = current_user_id()
     )
   );
 
@@ -188,7 +188,7 @@ CREATE POLICY "Users can view their sync queue items"
       SELECT 1 FROM cards c
       JOIN boards b ON c.board_id = b.id
       JOIN board_members bm ON b.id = bm.board_id
-      WHERE c.id = card_id AND bm.user_id = auth.uid()
+      WHERE c.id = card_id AND bm.user_id = current_user_id()
     )
   );
 
@@ -202,7 +202,7 @@ CREATE POLICY "Users can insert their sync queue items"
       SELECT 1 FROM cards c
       JOIN boards b ON c.board_id = b.id
       JOIN board_members bm ON b.id = bm.board_id
-      WHERE c.id = card_id AND bm.user_id = auth.uid()
+      WHERE c.id = card_id AND bm.user_id = current_user_id()
     )
   );
 
@@ -219,6 +219,6 @@ CREATE POLICY "Users can view their audit log entries"
       SELECT 1 FROM cards c
       JOIN boards b ON c.board_id = b.id
       JOIN board_members bm ON b.id = bm.board_id
-      WHERE c.id = card_id AND bm.user_id = auth.uid()
+      WHERE c.id = card_id AND bm.user_id = current_user_id()
     )
   );

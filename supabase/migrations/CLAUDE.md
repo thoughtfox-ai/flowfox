@@ -12,4 +12,12 @@
 | #809 | 2:17 PM | 🔵 | Row Level Security Policies Architecture Review | ~749 |
 | #801 | 2:06 PM | 🔴 | Replaced CURRENT_DATE in index predicate with immutable condition | ~141 |
 | #800 | 2:05 PM | 🔴 | Fixed IMMUTABLE function requirement in index predicate | ~110 |
+
+### Jan 21, 2026
+
+| ID | Time | T | Title | Read |
+|----|------|---|-------|------|
+| #1054 | 9:00 AM | 🔴 | Fixed RLS Policy Authentication Function in Google Tasks Migration | ~459 |
+| #1047 | 8:53 AM | 🔵 | Google Tasks Integration Migration Not Yet Applied | ~663 |
+| #1043 | 8:48 AM | ✅ | Google Tasks Sync Migration Applied via Direct psql Connection | ~519 |
 </claude-mem-context>
