@@ -3,9 +3,11 @@
 -- Required for NextAuth Google OAuth (Google IDs are strings, not UUIDs)
 -- ============================================
 
--- Step 1: Drop RLS policies on users table that reference id column
+-- Step 1: Drop ALL RLS policies on users table that reference id column
 DROP POLICY IF EXISTS "Users can view themselves" ON users;
+DROP POLICY IF EXISTS "Users can view workspace members" ON users;
 DROP POLICY IF EXISTS "Users can update themselves" ON users;
+DROP POLICY IF EXISTS "Users can insert themselves" ON users;
 
 -- Step 2: Drop all foreign key constraints that reference users(id)
 ALTER TABLE workspace_members DROP CONSTRAINT IF EXISTS workspace_members_user_id_fkey;
@@ -102,16 +104,32 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Step 8: Re-create RLS policies on users table with TEXT type
+-- Step 8: Re-create ALL RLS policies on users table with TEXT type
 CREATE POLICY "Users can view themselves"
   ON users
   FOR SELECT
   USING (id = current_user_id());
 
+CREATE POLICY "Users can view workspace members"
+  ON users
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM workspace_members wm1
+      JOIN workspace_members wm2 ON wm1.workspace_id = wm2.workspace_id
+      WHERE wm1.user_id = current_user_id() AND wm2.user_id = users.id
+    )
+  );
+
 CREATE POLICY "Users can update themselves"
   ON users
   FOR UPDATE
   USING (id = current_user_id());
+
+CREATE POLICY "Users can insert themselves"
+  ON users
+  FOR INSERT
+  WITH CHECK (id = current_user_id());
 
 -- Note: This allows NextAuth to use Google's user IDs (strings) as primary keys
 -- Example Google ID: "117492150812345678901"
