@@ -98,16 +98,17 @@ DROP POLICY IF EXISTS "Users can view own preferences" ON notification_preferenc
 DROP POLICY IF EXISTS "Users can create own preferences" ON notification_preferences;
 DROP POLICY IF EXISTS "Users can update own preferences" ON notification_preferences;
 
--- Google Tasks sync policies (from migration 003)
-DROP POLICY IF EXISTS "Users can view own task mappings" ON google_task_list_mappings;
-DROP POLICY IF EXISTS "Users can create own task mappings" ON google_task_list_mappings;
-DROP POLICY IF EXISTS "Users can update own task mappings" ON google_task_list_mappings;
-DROP POLICY IF EXISTS "Users can delete own task mappings" ON google_task_list_mappings;
-DROP POLICY IF EXISTS "Users can view own sync state" ON google_task_sync_state;
-DROP POLICY IF EXISTS "Users can manage own sync state" ON google_task_sync_state;
-DROP POLICY IF EXISTS "Users can view own sync queue" ON google_sync_queue;
-DROP POLICY IF EXISTS "Users can manage own sync queue" ON google_sync_queue;
-DROP POLICY IF EXISTS "Users can view own sync audit log" ON google_sync_audit_log;
+-- Google Tasks sync policies (from migration 003) - EXACT NAMES
+DROP POLICY IF EXISTS "Users can view their own task list mappings" ON google_task_list_mappings;
+DROP POLICY IF EXISTS "Users can create their own task list mappings" ON google_task_list_mappings;
+DROP POLICY IF EXISTS "Users can update their own task list mappings" ON google_task_list_mappings;
+DROP POLICY IF EXISTS "Users can delete their own task list mappings" ON google_task_list_mappings;
+DROP POLICY IF EXISTS "Users can view sync state for their cards" ON google_task_sync_state;
+DROP POLICY IF EXISTS "Users can create sync state for their cards" ON google_task_sync_state;
+DROP POLICY IF EXISTS "Users can update sync state for their cards" ON google_task_sync_state;
+DROP POLICY IF EXISTS "Users can view their sync queue items" ON google_sync_queue;
+DROP POLICY IF EXISTS "Users can insert their sync queue items" ON google_sync_queue;
+DROP POLICY IF EXISTS "Users can view their audit log entries" ON google_sync_audit_log;
 
 -- Step 2: Drop ALL foreign key constraints that reference users(id)
 ALTER TABLE workspace_members DROP CONSTRAINT IF EXISTS workspace_members_user_id_fkey;
@@ -564,33 +565,81 @@ CREATE POLICY "Users can create own preferences" ON notification_preferences
 CREATE POLICY "Users can update own preferences" ON notification_preferences
     FOR UPDATE USING (user_id = current_user_id());
 
--- Google Tasks sync policies
-CREATE POLICY "Users can view own task mappings" ON google_task_list_mappings
+-- Google Tasks sync policies (matching migration 003 exactly)
+CREATE POLICY "Users can view their own task list mappings" ON google_task_list_mappings
     FOR SELECT USING (user_id = current_user_id());
 
-CREATE POLICY "Users can create own task mappings" ON google_task_list_mappings
+CREATE POLICY "Users can create their own task list mappings" ON google_task_list_mappings
     FOR INSERT WITH CHECK (user_id = current_user_id());
 
-CREATE POLICY "Users can update own task mappings" ON google_task_list_mappings
+CREATE POLICY "Users can update their own task list mappings" ON google_task_list_mappings
     FOR UPDATE USING (user_id = current_user_id());
 
-CREATE POLICY "Users can delete own task mappings" ON google_task_list_mappings
+CREATE POLICY "Users can delete their own task list mappings" ON google_task_list_mappings
     FOR DELETE USING (user_id = current_user_id());
 
-CREATE POLICY "Users can view own sync state" ON google_task_sync_state
-    FOR SELECT USING (user_id = current_user_id());
+CREATE POLICY "Users can view sync state for their cards" ON google_task_sync_state
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM cards c
+            JOIN boards b ON c.board_id = b.id
+            JOIN board_members bm ON b.id = bm.board_id
+            WHERE c.id = card_id AND bm.user_id = current_user_id()
+        )
+    );
 
-CREATE POLICY "Users can manage own sync state" ON google_task_sync_state
-    FOR ALL USING (user_id = current_user_id());
+CREATE POLICY "Users can create sync state for their cards" ON google_task_sync_state
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM cards c
+            JOIN boards b ON c.board_id = b.id
+            JOIN board_members bm ON b.id = bm.board_id
+            WHERE c.id = card_id AND bm.user_id = current_user_id()
+        )
+    );
 
-CREATE POLICY "Users can view own sync queue" ON google_sync_queue
-    FOR SELECT USING (user_id = current_user_id());
+CREATE POLICY "Users can update sync state for their cards" ON google_task_sync_state
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM cards c
+            JOIN boards b ON c.board_id = b.id
+            JOIN board_members bm ON b.id = bm.board_id
+            WHERE c.id = card_id AND bm.user_id = current_user_id()
+        )
+    );
 
-CREATE POLICY "Users can manage own sync queue" ON google_sync_queue
-    FOR ALL USING (user_id = current_user_id());
+CREATE POLICY "Users can view their sync queue items" ON google_sync_queue
+    FOR SELECT USING (
+        card_id IS NULL OR
+        EXISTS (
+            SELECT 1 FROM cards c
+            JOIN boards b ON c.board_id = b.id
+            JOIN board_members bm ON b.id = bm.board_id
+            WHERE c.id = card_id AND bm.user_id = current_user_id()
+        )
+    );
 
-CREATE POLICY "Users can view own sync audit log" ON google_sync_audit_log
-    FOR SELECT USING (user_id = current_user_id());
+CREATE POLICY "Users can insert their sync queue items" ON google_sync_queue
+    FOR INSERT WITH CHECK (
+        card_id IS NULL OR
+        EXISTS (
+            SELECT 1 FROM cards c
+            JOIN boards b ON c.board_id = b.id
+            JOIN board_members bm ON b.id = bm.board_id
+            WHERE c.id = card_id AND bm.user_id = current_user_id()
+        )
+    );
+
+CREATE POLICY "Users can view their audit log entries" ON google_sync_audit_log
+    FOR SELECT USING (
+        card_id IS NULL OR
+        EXISTS (
+            SELECT 1 FROM cards c
+            JOIN boards b ON c.board_id = b.id
+            JOIN board_members bm ON b.id = bm.board_id
+            WHERE c.id = card_id AND bm.user_id = current_user_id()
+        )
+    );
 
 -- Note: This allows NextAuth to use Google's user IDs (strings) as primary keys
 -- Example Google ID: "117492150812345678901"
