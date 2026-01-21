@@ -3,7 +3,11 @@
 -- Required for NextAuth Google OAuth (Google IDs are strings, not UUIDs)
 -- ============================================
 
--- Step 1: Drop all foreign key constraints that reference users(id)
+-- Step 1: Drop RLS policies on users table that reference id column
+DROP POLICY IF EXISTS "Users can view themselves" ON users;
+DROP POLICY IF EXISTS "Users can update themselves" ON users;
+
+-- Step 2: Drop all foreign key constraints that reference users(id)
 ALTER TABLE workspace_members DROP CONSTRAINT IF EXISTS workspace_members_user_id_fkey;
 ALTER TABLE board_members DROP CONSTRAINT IF EXISTS board_members_user_id_fkey;
 ALTER TABLE workspaces DROP CONSTRAINT IF EXISTS workspaces_created_by_fkey;
@@ -11,11 +15,11 @@ ALTER TABLE boards DROP CONSTRAINT IF EXISTS boards_created_by_fkey;
 ALTER TABLE cards DROP CONSTRAINT IF EXISTS cards_created_by_fkey;
 ALTER TABLE google_task_list_mappings DROP CONSTRAINT IF EXISTS google_task_list_mappings_user_id_fkey;
 
--- Step 2: Change users.id column type from UUID to TEXT
+-- Step 3: Change users.id column type from UUID to TEXT
 ALTER TABLE users ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE users ALTER COLUMN id TYPE TEXT USING id::TEXT;
 
--- Step 3: Change all foreign key columns from UUID to TEXT
+-- Step 4: Change all foreign key columns from UUID to TEXT
 ALTER TABLE workspace_members ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
 ALTER TABLE board_members ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
 ALTER TABLE workspaces ALTER COLUMN created_by TYPE TEXT USING created_by::TEXT;
@@ -23,7 +27,7 @@ ALTER TABLE boards ALTER COLUMN created_by TYPE TEXT USING created_by::TEXT;
 ALTER TABLE cards ALTER COLUMN created_by TYPE TEXT USING created_by::TEXT;
 ALTER TABLE google_task_list_mappings ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
 
--- Step 4: Re-add foreign key constraints
+-- Step 5: Re-add foreign key constraints
 ALTER TABLE workspace_members
   ADD CONSTRAINT workspace_members_user_id_fkey
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
@@ -47,6 +51,67 @@ ALTER TABLE cards
 ALTER TABLE google_task_list_mappings
   ADD CONSTRAINT google_task_list_mappings_user_id_fkey
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+-- Step 6: Update current_user_id() function to return TEXT instead of UUID
+CREATE OR REPLACE FUNCTION current_user_id()
+RETURNS TEXT AS $$
+BEGIN
+  -- Try to get from request context (set by API routes with service role)
+  -- Falls back to auth.uid() for backwards compatibility
+  RETURN COALESCE(
+    current_setting('request.jwt.claims.sub', true),
+    auth.uid()::TEXT
+  );
+EXCEPTION
+  WHEN OTHERS THEN
+    -- If all else fails, return NULL (same as auth.uid() when not authenticated)
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- Step 7: Update helper functions to work with TEXT user IDs
+CREATE OR REPLACE FUNCTION is_workspace_member(workspace_uuid UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM workspace_members
+        WHERE workspace_id = workspace_uuid AND user_id = current_user_id()
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION can_access_board(board_uuid UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM board_members
+        WHERE board_id = board_uuid AND user_id = current_user_id()
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION can_edit_board(board_uuid UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM board_members
+        WHERE board_id = board_uuid
+        AND user_id = current_user_id()
+        AND role IN ('admin', 'contributor')
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Step 8: Re-create RLS policies on users table with TEXT type
+CREATE POLICY "Users can view themselves"
+  ON users
+  FOR SELECT
+  USING (id = current_user_id());
+
+CREATE POLICY "Users can update themselves"
+  ON users
+  FOR UPDATE
+  USING (id = current_user_id());
 
 -- Note: This allows NextAuth to use Google's user IDs (strings) as primary keys
 -- Example Google ID: "117492150812345678901"
