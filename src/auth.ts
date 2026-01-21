@@ -28,8 +28,8 @@ export const authConfig = {
     }),
   ],
   callbacks: {
-    async jwt({ token, account, profile }) {
-      // Persist the OAuth access_token and refresh_token to the token right after signin
+    async jwt({ token, account, profile, trigger }) {
+      // On initial sign-in, persist the OAuth tokens
       if (account) {
         token.accessToken = account.access_token
         token.refreshToken = account.refresh_token
@@ -39,6 +39,50 @@ export const authConfig = {
       if (profile) {
         token.id = profile.sub
       }
+
+      // Check if token has expired and refresh if needed
+      if (token.expiresAt && token.refreshToken) {
+        const expiresAt = token.expiresAt as number
+        const now = Math.floor(Date.now() / 1000)
+
+        // Refresh token if it expires in the next 5 minutes
+        if (now >= expiresAt - 300) {
+          try {
+            const response = await fetch('https://oauth2.googleapis.com/token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({
+                client_id: process.env.AUTH_GOOGLE_ID!,
+                client_secret: process.env.AUTH_GOOGLE_SECRET!,
+                grant_type: 'refresh_token',
+                refresh_token: token.refreshToken as string,
+              }),
+            })
+
+            const refreshedTokens = await response.json()
+
+            if (!response.ok) {
+              throw new Error('Failed to refresh token')
+            }
+
+            token.accessToken = refreshedTokens.access_token
+            token.expiresAt = Math.floor(Date.now() / 1000) + refreshedTokens.expires_in
+
+            // Update refresh token if a new one was provided
+            if (refreshedTokens.refresh_token) {
+              token.refreshToken = refreshedTokens.refresh_token
+            }
+
+            console.log('Token refreshed successfully')
+          } catch (error) {
+            console.error('Error refreshing access token:', error)
+            // Return token as-is, will fail on next API call and force re-auth
+          }
+        }
+      }
+
+      // Token is persisted automatically by NextAuth after this returns
+      // On subsequent requests, token.accessToken will still be available
       return token
     },
     async session({ session, token }) {

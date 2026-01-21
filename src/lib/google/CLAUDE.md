@@ -7,6 +7,7 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
+| #1194 | 10:00 AM | 🟣 | Enhanced Error Details for Google Tasks API Failures | ~558 |
 | #1081 | 9:11 AM | 🟣 | Google Tasks Bi-Directional Sync Implementation Committed | ~543 |
 | #1065 | 9:06 AM | 🟣 | Google Tasks Bi-directional Sync Engine Implementation | ~952 |
 | #1060 | 9:05 AM | 🟣 | Google Tasks API Client Library Implemented | ~662 |

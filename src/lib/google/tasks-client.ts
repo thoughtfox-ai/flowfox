@@ -55,7 +55,14 @@ export class GoogleTasksClient {
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch task lists: ${response.statusText}`)
+      let errorDetails = response.statusText
+      try {
+        const errorBody = await response.json()
+        errorDetails = errorBody.error?.message || JSON.stringify(errorBody)
+      } catch {
+        // If response body isn't JSON, use statusText
+      }
+      throw new Error(`Failed to fetch task lists (${response.status}): ${errorDetails}`)
     }
 
     const data: GoogleTaskListsResponse = await response.json()
