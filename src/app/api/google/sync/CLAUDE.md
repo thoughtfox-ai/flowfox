@@ -8,5 +8,4 @@
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
 | #1066 | 9:06 AM | 🟣 | Google Tasks Sync API Endpoint with Session-Based Authentication | ~595 |
-| #1056 | 9:01 AM | ✅ | Google Tasks Integration Files Staged for Commit | ~608 |
 </claude-mem-context>

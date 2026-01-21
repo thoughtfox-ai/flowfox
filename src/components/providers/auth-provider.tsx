@@ -1,25 +1,15 @@
 'use client'
 
-import type { User } from '@supabase/supabase-js'
 import { createContext, useContext, type ReactNode } from 'react'
+import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
 
-// AUTH DISABLED FOR DEVELOPMENT
-// TODO: Re-enable real auth once Google OAuth is configured
-
-// Mock user for development - use static date to avoid hydration mismatch
-// Using a valid UUID for database compatibility
-const DEV_USER_ID = 'db297104-c70f-4e4c-80ae-343849c9c02f'
-
-const MOCK_USER: User = {
-  id: DEV_USER_ID,
-  email: 'dev@thoughtfox.io',
-  app_metadata: {},
+interface User {
+  id: string
+  email: string
   user_metadata: {
-    full_name: 'Dev User',
-    avatar_url: null,
-  },
-  aud: 'authenticated',
-  created_at: '2025-01-20T00:00:00.000Z',
+    full_name?: string
+    avatar_url?: string | null
+  }
 }
 
 interface AuthContextType {
@@ -35,13 +25,23 @@ const AuthContext = createContext<AuthContextType>({
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Use mock user - no loading state needed
-  const user = MOCK_USER
-  const loading = false
+  const { data: session, status } = useSession()
+  const loading = status === 'loading'
+
+  // Transform NextAuth session to match expected User type
+  const user: User | null = session?.user
+    ? {
+        id: session.user.id || '',
+        email: session.user.email || '',
+        user_metadata: {
+          full_name: session.user.name || session.user.email?.split('@')[0] || 'User',
+          avatar_url: session.user.image || null,
+        },
+      }
+    : null
 
   const signOut = async () => {
-    // In dev mode, just refresh the page
-    window.location.href = '/boards'
+    await nextAuthSignOut({ callbackUrl: '/auth/login' })
   }
 
   return (
