@@ -9,27 +9,43 @@ DROP POLICY IF EXISTS "Users can view workspace members" ON users;
 DROP POLICY IF EXISTS "Users can update themselves" ON users;
 DROP POLICY IF EXISTS "Users can insert themselves" ON users;
 
--- Step 2: Drop all foreign key constraints that reference users(id)
+-- Step 2: Drop ALL foreign key constraints that reference users(id)
 ALTER TABLE workspace_members DROP CONSTRAINT IF EXISTS workspace_members_user_id_fkey;
 ALTER TABLE board_members DROP CONSTRAINT IF EXISTS board_members_user_id_fkey;
 ALTER TABLE workspaces DROP CONSTRAINT IF EXISTS workspaces_created_by_fkey;
 ALTER TABLE boards DROP CONSTRAINT IF EXISTS boards_created_by_fkey;
 ALTER TABLE cards DROP CONSTRAINT IF EXISTS cards_created_by_fkey;
 ALTER TABLE google_task_list_mappings DROP CONSTRAINT IF EXISTS google_task_list_mappings_user_id_fkey;
+ALTER TABLE card_assignments DROP CONSTRAINT IF EXISTS card_assignments_user_id_fkey;
+ALTER TABLE subtasks DROP CONSTRAINT IF EXISTS subtasks_assignee_id_fkey;
+ALTER TABLE card_dependencies DROP CONSTRAINT IF EXISTS card_dependencies_created_by_fkey;
+ALTER TABLE time_entries DROP CONSTRAINT IF EXISTS time_entries_user_id_fkey;
+ALTER TABLE recurring_tasks DROP CONSTRAINT IF EXISTS recurring_tasks_created_by_fkey;
+ALTER TABLE activities DROP CONSTRAINT IF EXISTS activities_user_id_fkey;
+ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_user_id_fkey;
+ALTER TABLE notification_preferences DROP CONSTRAINT IF EXISTS notification_preferences_user_id_fkey;
 
 -- Step 3: Change users.id column type from UUID to TEXT
 ALTER TABLE users ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE users ALTER COLUMN id TYPE TEXT USING id::TEXT;
 
--- Step 4: Change all foreign key columns from UUID to TEXT
+-- Step 4: Change ALL foreign key columns from UUID to TEXT
 ALTER TABLE workspace_members ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
 ALTER TABLE board_members ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
 ALTER TABLE workspaces ALTER COLUMN created_by TYPE TEXT USING created_by::TEXT;
 ALTER TABLE boards ALTER COLUMN created_by TYPE TEXT USING created_by::TEXT;
 ALTER TABLE cards ALTER COLUMN created_by TYPE TEXT USING created_by::TEXT;
 ALTER TABLE google_task_list_mappings ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
+ALTER TABLE card_assignments ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
+ALTER TABLE subtasks ALTER COLUMN assignee_id TYPE TEXT USING assignee_id::TEXT;
+ALTER TABLE card_dependencies ALTER COLUMN created_by TYPE TEXT USING created_by::TEXT;
+ALTER TABLE time_entries ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
+ALTER TABLE recurring_tasks ALTER COLUMN created_by TYPE TEXT USING created_by::TEXT;
+ALTER TABLE activities ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
+ALTER TABLE notifications ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
+ALTER TABLE notification_preferences ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
 
--- Step 5: Re-add foreign key constraints
+-- Step 5: Re-add ALL foreign key constraints
 ALTER TABLE workspace_members
   ADD CONSTRAINT workspace_members_user_id_fkey
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
@@ -52,6 +68,38 @@ ALTER TABLE cards
 
 ALTER TABLE google_task_list_mappings
   ADD CONSTRAINT google_task_list_mappings_user_id_fkey
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE card_assignments
+  ADD CONSTRAINT card_assignments_user_id_fkey
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE subtasks
+  ADD CONSTRAINT subtasks_assignee_id_fkey
+  FOREIGN KEY (assignee_id) REFERENCES users(id);
+
+ALTER TABLE card_dependencies
+  ADD CONSTRAINT card_dependencies_created_by_fkey
+  FOREIGN KEY (created_by) REFERENCES users(id);
+
+ALTER TABLE time_entries
+  ADD CONSTRAINT time_entries_user_id_fkey
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE recurring_tasks
+  ADD CONSTRAINT recurring_tasks_created_by_fkey
+  FOREIGN KEY (created_by) REFERENCES users(id);
+
+ALTER TABLE activities
+  ADD CONSTRAINT activities_user_id_fkey
+  FOREIGN KEY (user_id) REFERENCES users(id);
+
+ALTER TABLE notifications
+  ADD CONSTRAINT notifications_user_id_fkey
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE notification_preferences
+  ADD CONSTRAINT notification_preferences_user_id_fkey
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 -- Step 6: Update current_user_id() function to return TEXT instead of UUID
