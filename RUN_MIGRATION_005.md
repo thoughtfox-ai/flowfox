@@ -29,16 +29,27 @@ Google OAuth returns user IDs as strings (e.g., "117492150812345678901"), but yo
 
 ## What This Migration Does
 
-1. Drops all foreign key constraints that reference `users(id)`
-2. Converts `users.id` from UUID → TEXT
-3. Converts all related foreign key columns (user_id, created_by) from UUID → TEXT
-4. Re-adds all foreign key constraints
+1. Drops RLS policies on `users` table (prevents type alteration errors)
+2. Drops all foreign key constraints that reference `users(id)`
+3. Converts `users.id` from UUID → TEXT
+4. Converts all related foreign key columns (user_id, created_by) from UUID → TEXT
+5. Re-adds all foreign key constraints
+6. Updates `current_user_id()` function to return TEXT instead of UUID
+7. Updates helper functions to work with TEXT user IDs
+8. Re-creates RLS policies with TEXT comparisons
 
 ## Expected Output
 
-You should see multiple "ALTER TABLE" success messages. If you get any errors, check that:
+You should see multiple success messages for:
+- DROP POLICY
+- ALTER TABLE
+- CREATE OR REPLACE FUNCTION
+- CREATE POLICY
+
+If you get any errors, check that:
 - Migration 003 (Google Tasks sync) was already applied
 - You're using the Supabase SQL Editor (not regular psql)
+- You're logged in with sufficient database privileges
 
 ## After Migration
 
