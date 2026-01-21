@@ -14,7 +14,7 @@ export async function GET() {
   try {
     const session = await auth()
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -22,20 +22,6 @@ export async function GET() {
     }
 
     const supabase = createAdminClient()
-
-    // Get user ID from email
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', session.user.email)
-      .single()
-
-    if (userError || !userData) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
-    }
 
     const { data: mappings, error } = await supabase
       .from('google_task_list_mappings')
@@ -47,7 +33,7 @@ export async function GET() {
           description
         )
       `)
-      .eq('user_id', userData.id)
+      .eq('user_id', session.user.id)
 
     if (error) throw error
 
@@ -65,7 +51,7 @@ export async function POST(request: Request) {
   try {
     const session = await auth()
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -83,25 +69,11 @@ export async function POST(request: Request) {
 
     const supabase = createAdminClient()
 
-    // Get user ID
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', session.user.email)
-      .single()
-
-    if (userError || !userData) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
     // Create mapping
     const { data: mapping, error } = await supabase
       .from('google_task_list_mappings')
       .insert({
-        user_id: userData.id,
+        user_id: session.user.id,
         board_id: boardId,
         google_task_list_id: googleTaskListId,
         google_task_list_title: googleTaskListTitle,
@@ -126,7 +98,7 @@ export async function DELETE(request: Request) {
   try {
     const session = await auth()
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -144,26 +116,12 @@ export async function DELETE(request: Request) {
 
     const supabase = createAdminClient()
 
-    // Get user ID
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', session.user.email)
-      .single()
-
-    if (userError || !userData) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
     // Delete mapping
     const { error } = await supabase
       .from('google_task_list_mappings')
       .delete()
       .eq('id', mappingId)
-      .eq('user_id', userData.id)
+      .eq('user_id', session.user.id)
 
     if (error) throw error
 

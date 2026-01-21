@@ -8,7 +8,4 @@
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
 | #1029 | 5:00 PM | 🔄 | Auth Configuration File Relocated to src Directory | ~353 |
-| #1020 | 4:58 PM | 🟣 | Authentication Middleware Re-enabled | ~625 |
-| #1019 | " | 🔵 | Authentication Middleware Disabled for Development | ~541 |
-| #978 | 3:46 PM | 🔵 | Middleware Authentication Disabled for Development | ~459 |
 </claude-mem-context>
