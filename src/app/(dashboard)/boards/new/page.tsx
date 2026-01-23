@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Loader2, Sparkles, Wand2, RefreshCw } from 'lucide-react'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { ArrowLeft, Loader2, Sparkles, Wand2, RefreshCw, User, Users } from 'lucide-react'
 import Link from 'next/link'
 import type { GeneratedBoard } from '@/lib/gemini/client'
 
@@ -24,7 +25,10 @@ export default function NewBoardPage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    is_personal: false,
   })
+
+  const [boardType, setBoardType] = useState<'personal' | 'organization'>('organization')
 
   const handleGenerate = async () => {
     if (!formData.name) {
@@ -177,6 +181,45 @@ export default function NewBoardPage() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
               />
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <Label>Board Type</Label>
+              <RadioGroup
+                value={boardType}
+                onValueChange={(value) => {
+                  const type = value as 'personal' | 'organization'
+                  setBoardType(type)
+                  setFormData({ ...formData, is_personal: type === 'personal' })
+                }}
+              >
+                <div className="flex items-start space-x-3 space-y-0 rounded-md border p-4 hover:bg-muted/50 transition-colors">
+                  <RadioGroupItem value="organization" id="organization" />
+                  <div className="space-y-1 leading-none flex-1">
+                    <Label htmlFor="organization" className="flex items-center gap-2 cursor-pointer">
+                      <Users className="h-4 w-4 text-[#FF6B35]" />
+                      <span className="font-semibold">Team Board</span>
+                      <Badge variant="secondary">Shared</Badge>
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Visible to all workspace members. Collaborate with your team and assign tasks to others.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 space-y-0 rounded-md border p-4 hover:bg-muted/50 transition-colors">
+                  <RadioGroupItem value="personal" id="personal" />
+                  <div className="space-y-1 leading-none flex-1">
+                    <Label htmlFor="personal" className="flex items-center gap-2 cursor-pointer">
+                      <User className="h-4 w-4 text-[#FF6B35]" />
+                      <span className="font-semibold">Personal Board</span>
+                      <Badge variant="outline">Private</Badge>
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Only visible to you. Perfect for personal tasks and private projects.
+                    </p>
+                  </div>
+                </div>
+              </RadioGroup>
             </div>
 
             <div className="flex items-center space-x-2 pt-2">

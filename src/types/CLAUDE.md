@@ -16,5 +16,6 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
+| #1448 | 1:24 PM | 🔵 | Board Types Include Google Tasks Integration Support | ~648 |
 | #1066 | 9:06 AM | 🟣 | Google Tasks Sync API Endpoint with Session-Based Authentication | ~595 |
 </claude-mem-context>

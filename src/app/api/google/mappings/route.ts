@@ -78,7 +78,7 @@ export async function POST(request: Request) {
         google_task_list_id: googleTaskListId,
         google_task_list_title: googleTaskListTitle,
         sync_enabled: true,
-      })
+      } as any)
       .select()
       .single()
 

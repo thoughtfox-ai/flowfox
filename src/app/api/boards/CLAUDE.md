@@ -12,4 +12,19 @@
 | #887 | 3:20 PM | 🔴 | Fixed Dev User Creation to Include Auth Schema | ~486 |
 | #870 | 3:19 PM | ✅ | Placeholder User ID Replaced with Real UUID | ~263 |
 | #864 | 3:18 PM | ✅ | Enhanced Error Details in Board Creation API Endpoint | ~388 |
+
+### Jan 21, 2026
+
+| ID | Time | T | Title | Read |
+|----|------|---|-------|------|
+| #1475 | 1:30 PM | 🔵 | Board List API Implements Dual Query Strategy with Authentication | ~761 |
+| #1415 | 1:11 PM | 🔵 | Board Creation API Supports Personal and Organizational Workspaces | ~670 |
+| #1396 | 10:59 AM | 🔄 | Simplified Board Fetching Fallback Logic | ~365 |
+| #1373 | 10:55 AM | 🔴 | Added Fallback Query for Missing user_boards Database View | ~539 |
+| #1307 | 10:44 AM | 🔴 | Fixed Board Creation to Use Session User Instead of Hardcoded Dev User | ~498 |
+| #1303 | " | 🟣 | Personal and Organizational Workspace Support in Board Creation | ~606 |
+| #1301 | " | 🟣 | Board Creation Now Uses Authenticated User Session | ~550 |
+| #1299 | 10:43 AM | 🟣 | Board API Enabled Authentication and Personal/Organization Filtering | ~647 |
+| #1270 | 10:37 AM | 🔴 | Boards API Response Format Standardized | ~505 |
+| #1268 | " | 🔵 | Board API Route Uses Development Mode with Admin Client | ~565 |
 </claude-mem-context>

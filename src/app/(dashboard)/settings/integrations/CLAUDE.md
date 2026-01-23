@@ -7,7 +7,5 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
-| #1081 | 9:11 AM | 🟣 | Google Tasks Bi-Directional Sync Implementation Committed | ~543 |
-| #1067 | 9:06 AM | 🟣 | Google Tasks Integration Settings Page Created | ~781 |
-| #1056 | 9:01 AM | ✅ | Google Tasks Integration Files Staged for Commit | ~608 |
+| #1284 | 10:40 AM | 🔄 | Removed Debug Logging from Integrations Page | ~372 |
 </claude-mem-context>

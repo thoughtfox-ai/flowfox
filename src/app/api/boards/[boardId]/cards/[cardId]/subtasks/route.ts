@@ -1,14 +1,21 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
-
-// Dev user ID - must match the one in /api/boards/route.ts
-const DEV_USER_ID = 'db297104-c70f-4e4c-80ae-343849c9c02f'
 
 type RouteParams = { params: Promise<{ boardId: string; cardId: string }> }
 
 // GET /api/boards/[boardId]/cards/[cardId]/subtasks - Get all subtasks for a card
 export async function GET(request: Request, { params }: RouteParams) {
   try {
+    const session = await auth()
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
     const { cardId } = await params
     const supabase = createAdminClient()
 
@@ -44,6 +51,15 @@ export async function GET(request: Request, { params }: RouteParams) {
 // POST /api/boards/[boardId]/cards/[cardId]/subtasks - Create a subtask
 export async function POST(request: Request, { params }: RouteParams) {
   try {
+    const session = await auth()
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
     const { cardId } = await params
     const supabase = createAdminClient()
     const body = await request.json()
@@ -81,6 +97,15 @@ export async function POST(request: Request, { params }: RouteParams) {
 // PATCH /api/boards/[boardId]/cards/[cardId]/subtasks - Update a subtask
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
+    const session = await auth()
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
     const { cardId } = await params
     const supabase = createAdminClient()
     const body = await request.json()
@@ -123,6 +148,15 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 // DELETE /api/boards/[boardId]/cards/[cardId]/subtasks - Delete a subtask
 export async function DELETE(request: Request, { params }: RouteParams) {
   try {
+    const session = await auth()
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
     const { cardId } = await params
     const supabase = createAdminClient()
     const { searchParams } = new URL(request.url)

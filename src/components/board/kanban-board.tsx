@@ -20,12 +20,17 @@ import {
 } from '@dnd-kit/sortable'
 import { KanbanColumn } from './kanban-column'
 import { KanbanCard } from './kanban-card'
+import { GoogleTasksMappingDialog } from './google-tasks-mapping-dialog'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Plus, Cloud, Loader2, CheckCircle2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 import type { BoardColumn, BoardCard } from '@/types/board'
 
 interface KanbanBoardProps {
+  boardId: string
+  boardName: string
   columns: BoardColumn[]
   cards: BoardCard[]
   onCardMove: (
@@ -40,6 +45,8 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({
+  boardId,
+  boardName,
   columns,
   cards,
   onCardMove,
@@ -50,6 +57,10 @@ export function KanbanBoard({
   const [activeCard, setActiveCard] = useState<BoardCard | null>(null)
   const [isAddingColumn, setIsAddingColumn] = useState(false)
   const [newColumnName, setNewColumnName] = useState('')
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [syncSuccess, setSyncSuccess] = useState(false)
+  const [isMappingDialogOpen, setIsMappingDialogOpen] = useState(false)
+  const { toast } = useToast()
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -150,6 +161,72 @@ export function KanbanBoard({
     }
   }
 
+  const handleGoogleTasksSync = async () => {
+    setIsSyncing(true)
+    setSyncSuccess(false)
+
+    try {
+      const response = await fetch(`/api/boards/${boardId}/sync-google-tasks`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+
+        // Show user-friendly error message based on status
+        if (response.status === 404 && errorData.error?.includes('No Google Tasks integration')) {
+          // Open mapping dialog instead of just showing error
+          setIsMappingDialogOpen(true)
+        } else if (response.status === 401) {
+          toast({
+            title: 'Authentication Required',
+            description: errorData.error || 'Please reconnect your Google account in Settings.',
+            variant: 'destructive',
+          })
+        } else {
+          toast({
+            title: 'Sync Failed',
+            description: errorData.error || 'An error occurred while syncing with Google Tasks.',
+            variant: 'destructive',
+          })
+        }
+
+        console.error('Sync failed with status:', response.status, errorData)
+        return
+      }
+
+      const result = await response.json()
+      console.log('Sync successful:', result)
+
+      setSyncSuccess(true)
+
+      // Show success toast with details
+      toast({
+        title: 'Sync Successful!',
+        description: `Created ${result.result.cardsCreated || 0} cards, updated ${result.result.cardsUpdated || 0} cards`,
+      })
+
+      setTimeout(() => {
+        setSyncSuccess(false)
+        window.location.reload()
+      }, 2000)
+    } catch (error) {
+      console.error('Google Tasks sync failed:', error)
+      toast({
+        title: 'Sync Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
+  const handleMappingCreated = () => {
+    // Automatically retry sync after mapping is created
+    handleGoogleTasksSync()
+  }
+
   const getColumnCards = useCallback(
     (columnId: string) =>
       cards
@@ -159,7 +236,41 @@ export function KanbanBoard({
   )
 
   return (
-    <div className="flex-1 overflow-x-auto p-6">
+    <div className="flex-1 overflow-x-auto p-6 relative">
+      {/* Floating Google Tasks Sync Button */}
+      <div className="fixed bottom-8 right-8 z-50">
+        <Button
+          onClick={handleGoogleTasksSync}
+          disabled={isSyncing}
+          className={cn(
+            "group relative h-14 px-6 rounded-full shadow-2xl transition-all duration-300",
+            "font-bold text-base tracking-wide",
+            syncSuccess
+              ? "bg-gradient-to-r from-green-600 via-emerald-600 to-green-600 text-white shadow-green-500/50 hover:shadow-green-500/70"
+              : "bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 text-white shadow-blue-500/50 hover:shadow-blue-500/70",
+            "hover:scale-110 hover:-translate-y-1",
+            "ring-4 ring-white/20 dark:ring-black/20"
+          )}
+        >
+          {isSyncing ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Syncing...
+            </>
+          ) : syncSuccess ? (
+            <>
+              <CheckCircle2 className="mr-2 h-5 w-5" />
+              Synced!
+            </>
+          ) : (
+            <>
+              <Cloud className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+              Sync Google Tasks
+            </>
+          )}
+        </Button>
+      </div>
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -227,6 +338,15 @@ export function KanbanBoard({
           {activeCard && <KanbanCard card={activeCard} isDragging />}
         </DragOverlay>
       </DndContext>
+
+      {/* Google Tasks Mapping Dialog */}
+      <GoogleTasksMappingDialog
+        boardId={boardId}
+        boardName={boardName}
+        isOpen={isMappingDialogOpen}
+        onClose={() => setIsMappingDialogOpen(false)}
+        onMappingCreated={handleMappingCreated}
+      />
     </div>
   )
 }

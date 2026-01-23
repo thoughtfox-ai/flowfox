@@ -13,7 +13,8 @@ export const authConfig = {
           // Request offline access to get refresh token
           access_type: "offline",
           // Force consent screen to always show (needed to get refresh token every time)
-          prompt: "consent",
+          // Also show account picker to let users choose which Google account to use
+          prompt: "consent select_account",
           response_type: "code",
           // Request scopes for Google Tasks and Calendar
           scope: [

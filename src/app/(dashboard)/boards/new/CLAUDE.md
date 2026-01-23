@@ -18,6 +18,10 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
+| #1401 | 11:01 AM | 🟣 | Board Type Selection UI Added to Board Creation | ~449 |
+| #1400 | " | 🟣 | Personal Board Type Support Added to Board Creation | ~357 |
+| #1399 | " | 🟣 | Board Creation UI Enhanced with Additional Components | ~369 |
+| #1398 | " | 🔵 | AI Board Generation Feature Fully Implemented | ~490 |
 | #1056 | 9:01 AM | ✅ | Google Tasks Integration Files Staged for Commit | ~608 |
 | #1044 | 8:49 AM | ✅ | Board Creation Page Layout Updated for Better Spacing | ~417 |
 </claude-mem-context>

@@ -1,23 +1,96 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
 
-// DEV MODE: Using admin client to bypass RLS
-// TODO: Re-enable proper auth when Google OAuth is configured
-
-// GET /api/boards - List all boards
-export async function GET() {
+// GET /api/boards - List all boards accessible to the user
+export async function GET(request: Request) {
   try {
-    const supabase = createAdminClient()
+    const session = await auth()
 
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    const supabase = createAdminClient()
+    const { searchParams } = new URL(request.url)
+    const type = searchParams.get('type') // 'personal', 'organization', or null for all
+
+    console.log('Fetching boards for user:', session.user.id)
+
+    // Query boards where user is a member (using admin client, can't use RLS-based views)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: boards, error } = await (supabase as any)
+    let { data: boards, error } = await (supabase as any)
       .from('boards')
-      .select('*')
+      .select(`
+        id,
+        workspace_id,
+        name,
+        description,
+        slug,
+        is_archived,
+        is_personal,
+        created_by,
+        created_at,
+        updated_at,
+        board_members!inner(user_id)
+      `)
+      .eq('board_members.user_id', session.user.id)
       .order('created_at', { ascending: false })
 
-    if (error) throw error
+    console.log('Boards via membership join:', { count: boards?.length || 0, error: error?.message })
 
-    return NextResponse.json(boards)
+    // Fallback: if join doesn't work, query by created_by
+    if (error || !boards || boards.length === 0) {
+      console.log('Falling back to created_by query')
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (supabase as any)
+        .from('boards')
+        .select(`
+          id,
+          workspace_id,
+          name,
+          description,
+          slug,
+          is_archived,
+          is_personal,
+          created_by,
+          created_at,
+          updated_at
+        `)
+        .eq('created_by', session.user.id)
+        .order('created_at', { ascending: false })
+
+      boards = result.data
+      error = result.error
+      console.log('Boards via created_by:', { count: boards?.length || 0 })
+    }
+
+    // Clean up and add metadata
+    if (boards) {
+      // Remove the nested board_members object from join if it exists
+      boards = boards.map((board: { id: string; name: string; description: string | null; slug: string; is_personal?: boolean; board_members?: unknown }) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { board_members, ...boardData } = board
+        return {
+          ...boardData,
+          // Use actual is_personal value from DB, default to false if column doesn't exist yet
+          is_personal: boardData.is_personal ?? false,
+          card_count: 0,
+          my_assigned_count: 0,
+        }
+      })
+    }
+
+    if (error) {
+      console.error('Error fetching boards:', error)
+      throw error
+    }
+
+    return NextResponse.json({ boards: boards || [] })
   } catch (error) {
     console.error('Failed to fetch boards:', error)
     return NextResponse.json(
@@ -72,13 +145,20 @@ async function ensureDevUser(supabase: ReturnType<typeof createAdminClient>) {
 // POST /api/boards - Create a new board
 export async function POST(request: Request) {
   try {
+    const session = await auth()
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
     const supabase = createAdminClient()
     const body = await request.json()
+    const { name, description, is_personal = false } = body
 
-    // Ensure dev user exists for foreign key constraints
-    await ensureDevUser(supabase)
-
-    const { name, description } = body
+    const userId = session.user.id
 
     // Generate slug from name
     const slug = name
@@ -86,43 +166,58 @@ export async function POST(request: Request) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '')
 
-    // Get or create default workspace
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: workspaces, error: wsError } = await (supabase as any)
-      .from('workspaces')
-      .select('id')
-      .limit(1)
-
-    if (wsError) throw wsError
-
     let workspaceId: string
 
-    if (workspaces && workspaces.length > 0) {
-      workspaceId = workspaces[0].id
-    } else {
-      // Create default workspace
+    if (is_personal) {
+      // Get or create personal workspace using helper function
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: newWorkspace, error: createWsError } = await (supabase as any)
+      const { data: personalWorkspaceId, error: pwError } = await (supabase as any)
+        .rpc('get_or_create_personal_workspace', { p_user_id: userId })
+
+      if (pwError) {
+        console.error('Error getting personal workspace:', pwError)
+        throw pwError
+      }
+
+      workspaceId = personalWorkspaceId
+    } else {
+      // Get ThoughtFox organizational workspace
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: workspaces, error: wsError } = await (supabase as any)
         .from('workspaces')
-        .insert({
-          name: 'ThoughtFox',
-          slug: 'thoughtfox',
-          google_domain: 'thoughtfox.io',
-          created_by: DEV_USER_ID,
-        })
         .select('id')
+        .eq('type', 'organization')
+        .eq('slug', 'thoughtfox')
         .single()
 
-      if (createWsError) throw createWsError
-      workspaceId = newWorkspace.id
+      if (wsError) {
+        // Create ThoughtFox workspace if it doesn't exist
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: newWorkspace, error: createWsError } = await (supabase as any)
+          .from('workspaces')
+          .insert({
+            name: 'ThoughtFox',
+            slug: 'thoughtfox',
+            type: 'organization',
+            google_domain: 'thoughtfox.io',
+            created_by: userId,
+          })
+          .select('id')
+          .single()
 
-      // Add dev user as workspace owner
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('workspace_members').insert({
-        workspace_id: workspaceId,
-        user_id: DEV_USER_ID,
-        role: 'owner',
-      })
+        if (createWsError) throw createWsError
+        workspaceId = newWorkspace.id
+
+        // Add user as workspace owner
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('workspace_members').insert({
+          workspace_id: workspaceId,
+          user_id: userId,
+          role: 'owner',
+        })
+      } else {
+        workspaceId = workspaces.id
+      }
     }
 
     // Create the board
@@ -134,18 +229,22 @@ export async function POST(request: Request) {
         name,
         description: description || null,
         slug,
-        created_by: DEV_USER_ID,
+        is_personal,
+        created_by: userId,
       })
       .select('id')
       .single()
 
-    if (boardError) throw boardError
+    if (boardError) {
+      console.error('Error creating board:', boardError)
+      throw boardError
+    }
 
-    // Add dev user as board admin
+    // Add user as board admin
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from('board_members').insert({
       board_id: board.id,
-      user_id: DEV_USER_ID,
+      user_id: userId,
       role: 'admin',
     })
 

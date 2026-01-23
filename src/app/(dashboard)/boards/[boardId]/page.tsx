@@ -247,6 +247,8 @@ export default function BoardPage() {
     <div className="h-full flex flex-col">
       <BoardHeader board={board} />
       <KanbanBoard
+        boardId={boardId}
+        boardName={board.name}
         columns={columns}
         cards={visibleCards}
         onCardMove={handleCardMove}

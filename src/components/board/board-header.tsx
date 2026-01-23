@@ -8,8 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Settings, MoreHorizontal, Users, Archive, Trash2 } from 'lucide-react'
-import Link from 'next/link'
+import { MoreHorizontal, Users, Archive, Trash2 } from 'lucide-react'
 import type { Board } from '@/types/board'
 
 interface BoardHeaderProps {
@@ -17,10 +16,13 @@ interface BoardHeaderProps {
 }
 
 export function BoardHeader({ board }: BoardHeaderProps) {
+
   return (
-    <div className="border-b px-6 py-4 flex items-center justify-between bg-background">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{board.name}</h1>
+    <div className="border-b px-6 py-4 flex items-center justify-between bg-gradient-to-r from-background to-muted/30">
+      <div className="flex-1 min-w-0">
+        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+          {board.name}
+        </h1>
         {board.description && (
           <p className="text-sm text-muted-foreground mt-1">
             {board.description}
@@ -29,13 +31,6 @@ export function BoardHeader({ board }: BoardHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" asChild>
-          <Link href={`/boards/${board.id}/settings`}>
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </Link>
-        </Button>
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">

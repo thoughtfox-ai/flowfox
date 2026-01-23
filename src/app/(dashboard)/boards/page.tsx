@@ -6,8 +6,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { BlurFade } from '@/components/ui/blur-fade'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { BorderBeam } from '@/components/ui/border-beam'
+import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import { Plus, Kanban, Sparkles, LayoutGrid, Clock, ArrowRight } from 'lucide-react'
+import { Plus, Kanban, Sparkles, LayoutGrid, Clock, ArrowRight, User, Users } from 'lucide-react'
 
 interface Board {
   id: string
@@ -15,6 +16,7 @@ interface Board {
   description: string | null
   slug: string
   card_count: number
+  is_personal: boolean
 }
 
 export default function BoardsPage() {
@@ -27,15 +29,16 @@ export default function BoardsPage() {
         const response = await fetch('/api/boards')
         if (!response.ok) throw new Error('Failed to fetch boards')
 
-        const boardsData = await response.json()
+        const { boards: boardsData } = await response.json()
 
-        // Transform to include card_count (will be 0 for now)
-        const boardsWithCount = boardsData.map((board: Board) => ({
+        // Transform to include card_count (from user_boards view)
+        const boardsWithCount = (boardsData || []).map((board: Board) => ({
           id: board.id,
           name: board.name,
           description: board.description,
           slug: board.slug,
-          card_count: 0, // TODO: Add card count to API
+          card_count: board.card_count || 0,
+          is_personal: board.is_personal || false,
         }))
 
         setBoards(boardsWithCount)
@@ -143,61 +146,146 @@ export default function BoardsPage() {
           </div>
         </BlurFade>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {boards.map((board, index) => (
-            <BlurFade key={board.id} delay={0.2 + index * 0.1}>
-              <Link href={`/boards/${board.id}`} className="block group">
-                <div className="relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-[#FF6B35]/10 hover:-translate-y-1">
-                  {/* Top accent bar */}
-                  <div className="h-1.5 bg-gradient-to-r from-[#FF6B35] to-[#FF8F5E]" />
+        <div className="space-y-8">
+          {/* Personal Boards Section */}
+          {boards.some(b => b.is_personal) && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <User className="h-5 w-5 text-muted-foreground" />
+                <h2 className="text-xl font-semibold">My Personal Boards</h2>
+                <Badge variant="outline">{boards.filter(b => b.is_personal).length}</Badge>
+              </div>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {boards.filter(b => b.is_personal).map((board, index) => (
+                  <BlurFade key={board.id} delay={0.2 + index * 0.1}>
+                    <Link href={`/boards/${board.id}`} className="block group">
+                      <div className="relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-[#FF6B35]/10 hover:-translate-y-1">
+                        {/* Top accent bar */}
+                        <div className="h-1.5 bg-gradient-to-r from-[#FF6B35] to-[#FF8F5E]" />
 
-                  {/* Card content */}
-                  <div className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#FF6B35]/10 group-hover:bg-[#FF6B35]/20 transition-colors flex-shrink-0">
-                          <Kanban className="h-6 w-6 text-[#FF6B35]" />
+                        {/* Card content */}
+                        <div className="p-6">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-4">
+                              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#FF6B35]/10 group-hover:bg-[#FF6B35]/20 transition-colors flex-shrink-0">
+                                <Kanban className="h-6 w-6 text-[#FF6B35]" />
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-semibold text-lg leading-tight group-hover:text-[#FF6B35] transition-colors">
+                                    {board.name}
+                                  </h3>
+                                  <Badge variant="outline" className="text-xs">Private</Badge>
+                                </div>
+                                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                  <LayoutGrid className="h-3.5 w-3.5" />
+                                  {board.card_count} {board.card_count === 1 ? 'card' : 'cards'}
+                                </p>
+                              </div>
+                            </div>
+                            <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all mt-1" />
+                          </div>
+
+                          {board.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 mt-4 pl-16">
+                              {board.description}
+                            </p>
+                          )}
+
+                          {/* Bottom metadata */}
+                          <div className="flex items-center gap-4 mt-5 pt-4 border-t text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1.5">
+                              <Clock className="h-3.5 w-3.5" />
+                              Updated recently
+                            </span>
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <h3 className="font-semibold text-lg leading-tight group-hover:text-[#FF6B35] transition-colors">
-                            {board.name}
-                          </h3>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                            <LayoutGrid className="h-3.5 w-3.5" />
-                            {board.card_count} {board.card_count === 1 ? 'card' : 'cards'}
-                          </p>
-                        </div>
+
+                        {/* Hover border effect */}
+                        <BorderBeam
+                          size={200}
+                          duration={8}
+                          colorFrom="#FF6B35"
+                          colorTo="#FF8F5E"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        />
                       </div>
-                      <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all mt-1" />
-                    </div>
+                    </Link>
+                  </BlurFade>
+                ))}
+              </div>
+            </div>
+          )}
 
-                    {board.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-4 pl-16">
-                        {board.description}
-                      </p>
-                    )}
+          {/* Team Boards Section */}
+          {boards.some(b => !b.is_personal) && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-muted-foreground" />
+                <h2 className="text-xl font-semibold">Team Boards</h2>
+                <Badge variant="outline">{boards.filter(b => !b.is_personal).length}</Badge>
+              </div>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {boards.filter(b => !b.is_personal).map((board, index) => (
+                  <BlurFade key={board.id} delay={0.2 + index * 0.1}>
+                    <Link href={`/boards/${board.id}`} className="block group">
+                      <div className="relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-[#FF6B35]/10 hover:-translate-y-1">
+                        {/* Top accent bar */}
+                        <div className="h-1.5 bg-gradient-to-r from-[#FF6B35] to-[#FF8F5E]" />
 
-                    {/* Bottom metadata */}
-                    <div className="flex items-center gap-4 mt-5 pt-4 border-t text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5" />
-                        Updated recently
-                      </span>
-                    </div>
-                  </div>
+                        {/* Card content */}
+                        <div className="p-6">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-4">
+                              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#FF6B35]/10 group-hover:bg-[#FF6B35]/20 transition-colors flex-shrink-0">
+                                <Kanban className="h-6 w-6 text-[#FF6B35]" />
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-semibold text-lg leading-tight group-hover:text-[#FF6B35] transition-colors">
+                                    {board.name}
+                                  </h3>
+                                  <Badge variant="secondary" className="text-xs">Shared</Badge>
+                                </div>
+                                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                  <LayoutGrid className="h-3.5 w-3.5" />
+                                  {board.card_count} {board.card_count === 1 ? 'card' : 'cards'}
+                                </p>
+                              </div>
+                            </div>
+                            <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all mt-1" />
+                          </div>
 
-                  {/* Hover border effect */}
-                  <BorderBeam
-                    size={200}
-                    duration={8}
-                    colorFrom="#FF6B35"
-                    colorTo="#FF8F5E"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  />
-                </div>
-              </Link>
-            </BlurFade>
-          ))}
+                          {board.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 mt-4 pl-16">
+                              {board.description}
+                            </p>
+                          )}
+
+                          {/* Bottom metadata */}
+                          <div className="flex items-center gap-4 mt-5 pt-4 border-t text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1.5">
+                              <Clock className="h-3.5 w-3.5" />
+                              Updated recently
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Hover border effect */}
+                        <BorderBeam
+                          size={200}
+                          duration={8}
+                          colorFrom="#FF6B35"
+                          colorTo="#FF8F5E"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        />
+                      </div>
+                    </Link>
+                  </BlurFade>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

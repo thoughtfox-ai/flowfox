@@ -7,6 +7,8 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
+| #1200 | 10:02 AM | 🔴 | Google Tasks Integration Fixed with Automatic OAuth Token Refresh | ~644 |
+| #1198 | " | 🔵 | Google Tasks Integration Code Changes Staged | ~491 |
 | #1191 | 10:00 AM | ✅ | Enhanced Logging in Google Task Lists API Endpoint | ~559 |
 | #1081 | 9:11 AM | 🟣 | Google Tasks Bi-Directional Sync Implementation Committed | ~543 |
 | #1061 | 9:05 AM | 🟣 | Google Tasks API Integration Created | ~520 |

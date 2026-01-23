@@ -55,6 +55,20 @@
   --color-energetic-blue: #4FACFE;
   --color-light-gray: #F7FAFC;
   --color-border-gray: #E2E8F0;
+
+  /* Priority Colors for Cards */
+  --color-priority-critical-from: #ec4899;
+  --color-priority-critical-to: #f43f5e;
+  --color-priority-critical-border: #f43f5e;
+  --color-priority-high-from: #f97316;
+  --color-priority-high-to: #f59e0b;
+  --color-priority-high-border: #f97316;
+  --color-priority-medium-from: #3b82f6;
+  --color-priority-medium-to: #06b6d4;
+  --color-priority-medium-border: #3b82f6;
+  --color-priority-low-from: #a855f7;
+  --color-priority-low-to: #8b5cf6;
+  --color-priority-low-border: #a855f7;
   --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
   --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
   @keyframes shimmer-slide {
@@ -175,5 +189,105 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
     @apply font-bold;
+  }
+}
+
+@layer utilities {
+  /* Custom Scrollbar Styles */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-thumb-muted-foreground\/20::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 0.5rem;
+  }
+
+  .scrollbar-thumb-muted-foreground\/30::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 0.5rem;
+  }
+
+  .scrollbar-track-transparent::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 0.5rem;
+    height: 0.5rem;
+  }
+
+  /* Progress Gradient Animations */
+  @keyframes progress-fill {
+    from {
+      width: 0%;
+    }
+    to {
+      width: var(--progress-width, 100%);
+    }
+  }
+
+  .animate-progress-fill {
+    animation: progress-fill 0.6s ease-out forwards;
+  }
+
+  /* Card Shimmer Effect */
+  @keyframes card-shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-card-shimmer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+    animation: card-shimmer 1s ease-in-out;
+  }
+
+  /* Gradient Utilities */
+  .gradient-priority-critical {
+    background: linear-gradient(135deg, var(--color-priority-critical-from), var(--color-priority-critical-to));
+  }
+
+  .gradient-priority-high {
+    background: linear-gradient(135deg, var(--color-priority-high-from), var(--color-priority-high-to));
+  }
+
+  .gradient-priority-medium {
+    background: linear-gradient(135deg, var(--color-priority-medium-from), var(--color-priority-medium-to));
+  }
+
+  .gradient-priority-low {
+    background: linear-gradient(135deg, var(--color-priority-low-from), var(--color-priority-low-to));
+  }
+
+  /* Glow Effects */
+  .glow-critical {
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
+  }
+
+  .glow-high {
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.3);
+  }
+
+  .glow-medium {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+
+  .glow-low {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
   }
 }

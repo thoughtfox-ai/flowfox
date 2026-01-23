@@ -7,5 +7,6 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
-| #1402 | 11:02 AM | 🟣 | Radio Group Component Added from shadcn/ui | ~258 |
+| #1590 | 2:13 PM | 🔵 | Board-Specific Google Tasks Sync API Endpoint Implemented | ~538 |
+| #1476 | 1:31 PM | 🟣 | Board-Specific Google Tasks Sync Endpoint | ~687 |
 </claude-mem-context>
