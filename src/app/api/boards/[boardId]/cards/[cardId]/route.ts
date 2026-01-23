@@ -10,14 +10,14 @@ export async function GET(request: Request, { params }: RouteParams) {
     const supabase = createAdminClient()
 
     const { data: card, error } = await (supabase as any)
-      .from('cards')
+      .from('flowfox_cards')
       .select(`
         *,
-        labels:card_labels(
-          label:labels(id, name, color)
+        labels:flowfox_card_labels(
+          label:flowfox_labels(id, name, color)
         ),
-        assignees:card_assignments(
-          user:users(id, email, full_name, avatar_url)
+        assignees:flowfox_card_assignments(
+          user:user_profiles(id, email, full_name, avatar_url)
         )
       `)
       .eq('id', cardId)
@@ -78,7 +78,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 
     const { data: card, error } = await (supabase as any)
-      .from('cards')
+      .from('flowfox_cards')
       .update(updates)
       .eq('id', cardId)
       .eq('board_id', boardId)
@@ -104,7 +104,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     const supabase = createAdminClient()
 
     const { error } = await (supabase as any)
-      .from('cards')
+      .from('flowfox_cards')
       .delete()
       .eq('id', cardId)
       .eq('board_id', boardId)

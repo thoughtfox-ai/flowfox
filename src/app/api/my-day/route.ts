@@ -1,30 +1,36 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
 
-// Dev user ID - must match the one in /api/boards/route.ts
-const DEV_USER_ID = 'db297104-c70f-4e4c-80ae-343849c9c02f'
-
-// GET /api/my-day - Get all cards for the current user (dev mode: all accessible cards)
+// GET /api/my-day - Get all cards for the current user
 export async function GET() {
   try {
+    const session = await auth()
+
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
     const supabase = createAdminClient()
 
     // Get all non-archived cards with board and column info
-    // In production, this would filter by user assignments
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: cards, error } = await (supabase as any)
-      .from('cards')
+      .from('flowfox_cards')
       .select(`
         *,
-        board:boards(id, name),
-        column:columns(id, name, is_done_column),
-        labels:card_labels(
-          label:labels(id, name, color)
+        board:flowfox_boards(id, name),
+        column:flowfox_columns(id, name, is_done_column),
+        labels:flowfox_card_labels(
+          label:flowfox_labels(id, name, color)
         ),
-        assignees:card_assignments(
-          user:users(id, email, full_name, avatar_url)
+        assignees:flowfox_card_assignments(
+          user:user_profiles(id, email, full_name, avatar_url)
         ),
-        subtasks(id, is_completed)
+        flowfox_subtasks(id, is_completed)
       `)
       .eq('is_archived', false)
       .order('due_date', { ascending: true, nullsFirst: false })
@@ -42,12 +48,12 @@ export async function GET() {
       is_done_column: card.column?.is_done_column || false,
       labels: card.labels?.map((l: { label: unknown }) => l.label) || [],
       assignees: card.assignees?.map((a: { user: unknown }) => a.user) || [],
-      subtask_count: card.subtasks?.length || 0,
-      subtask_completed_count: card.subtasks?.filter((s: { is_completed: boolean }) => s.is_completed).length || 0,
+      subtask_count: card.flowfox_subtasks?.length || 0,
+      subtask_completed_count: card.flowfox_subtasks?.filter((s: { is_completed: boolean }) => s.is_completed).length || 0,
       // Clean up nested data
       board: undefined,
       column: undefined,
-      subtasks: undefined,
+      flowfox_subtasks: undefined,
     }))
 
     // Sort: overdue first, then today, then by due date, then by priority

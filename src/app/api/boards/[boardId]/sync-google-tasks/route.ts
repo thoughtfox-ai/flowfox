@@ -17,7 +17,7 @@ export async function POST(
   try {
     const session = await auth()
 
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -36,10 +36,10 @@ export async function POST(
 
     // Verify user has access to this board
     const { data: boardMember } = await supabase
-      .from('board_members')
+      .from('flowfox_board_members')
       .select('role')
       .eq('board_id', boardId)
-      .eq('user_id', session.user.id)
+      .eq('user_id', session.user.email)
       .single()
 
     if (!boardMember) {
@@ -54,7 +54,7 @@ export async function POST(
       .from('google_task_list_mappings')
       .select('google_task_list_id, board_id, user_id, sync_enabled')
       .eq('board_id', boardId)
-      .eq('user_id', session.user.id)
+      .eq('user_id', session.user.email)
       .eq('sync_enabled', true)
       .single()
 

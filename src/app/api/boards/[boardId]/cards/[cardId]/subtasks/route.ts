@@ -21,10 +21,10 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: subtasks, error } = await (supabase as any)
-      .from('subtasks')
+      .from('flowfox_subtasks')
       .select(`
         *,
-        assignee:users(id, email, full_name, avatar_url)
+        assignee:user_profiles(id, email, full_name, avatar_url)
       `)
       .eq('card_id', cardId)
       .order('position', { ascending: true })
@@ -68,7 +68,7 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: subtask, error } = await (supabase as any)
-      .from('subtasks')
+      .from('flowfox_subtasks')
       .insert({
         card_id: cardId,
         parent_subtask_id: parent_subtask_id || null,
@@ -78,7 +78,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       })
       .select(`
         *,
-        assignee:users(id, email, full_name, avatar_url)
+        assignee:user_profiles(id, email, full_name, avatar_url)
       `)
       .single()
 
@@ -123,13 +123,13 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: subtask, error } = await (supabase as any)
-      .from('subtasks')
+      .from('flowfox_subtasks')
       .update(updates)
       .eq('id', id)
       .eq('card_id', cardId)
       .select(`
         *,
-        assignee:users(id, email, full_name, avatar_url)
+        assignee:user_profiles(id, email, full_name, avatar_url)
       `)
       .single()
 
@@ -171,7 +171,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
-      .from('subtasks')
+      .from('flowfox_subtasks')
       .delete()
       .eq('id', subtaskId)
       .eq('card_id', cardId)

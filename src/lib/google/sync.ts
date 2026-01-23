@@ -62,7 +62,7 @@ export async function syncBoardWithGoogleTasks(
 
     // 1. Fetch all cards from the board
     const { data: cards, error: cardsError } = await supabase
-      .from('cards')
+      .from('flowfox_cards')
       .select('*')
       .eq('board_id', boardId)
 
@@ -104,7 +104,7 @@ export async function syncBoardWithGoogleTasks(
       try {
         // Get first column of the board
         const { data: columns } = await supabase
-          .from('columns')
+          .from('flowfox_columns')
           .select('id')
           .eq('board_id', boardId)
           .order('position', { ascending: true })
@@ -119,7 +119,7 @@ export async function syncBoardWithGoogleTasks(
 
         // Create card
         const { data: newCard, error: createError } = await supabase
-          .from('cards')
+          .from('flowfox_cards')
           .insert({
             ...cardData,
             board_id: boardId,
@@ -201,7 +201,7 @@ export async function syncBoardWithGoogleTasks(
           const winner = resolveConflict(task, card)
 
           // Log conflict
-          await supabase.from('google_sync_audit_log').insert({
+          await supabase.from('google_task_sync_audit_log').insert({
             card_id: card.id,
             sync_state_id: syncState.id,
             event_type: 'sync_conflict',
@@ -215,7 +215,7 @@ export async function syncBoardWithGoogleTasks(
             // Update FlowFox card from Google Task
             const updates = googleTaskToFlowFoxCard(task, card.column_id, card.position)
             await supabase
-              .from('cards')
+              .from('flowfox_cards')
               .update(updates)
               .eq('id', card.id)
 
@@ -247,7 +247,7 @@ export async function syncBoardWithGoogleTasks(
             // Update FlowFox from Google
             const updates = googleTaskToFlowFoxCard(task, card.column_id, card.position)
             await supabase
-              .from('cards')
+              .from('flowfox_cards')
               .update(updates)
               .eq('id', card.id)
 

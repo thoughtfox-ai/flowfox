@@ -12,7 +12,7 @@ export async function POST() {
   try {
     const session = await auth()
 
-    if (!session?.accessToken || !session?.user?.id) {
+    if (!session?.accessToken || !session?.user?.email) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -20,7 +20,7 @@ export async function POST() {
     }
 
     // Trigger sync for all mapped boards
-    const results = await syncAllMappedBoards(session.user.id, session.accessToken)
+    const results = await syncAllMappedBoards(session.user.email, session.accessToken)
 
     // Convert Map to object for JSON serialization
     const resultsObj: Record<string, any> = {}

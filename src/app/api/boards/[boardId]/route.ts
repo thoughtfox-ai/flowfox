@@ -12,7 +12,7 @@ export async function GET(
 
     // Fetch board
     const { data: board, error: boardError } = await (supabase as any)
-      .from('boards')
+      .from('flowfox_boards')
       .select('*')
       .eq('id', boardId)
       .single()
@@ -21,7 +21,7 @@ export async function GET(
 
     // Fetch columns
     const { data: columns, error: columnsError } = await (supabase as any)
-      .from('columns')
+      .from('flowfox_columns')
       .select('*')
       .eq('board_id', boardId)
       .order('position', { ascending: true })
@@ -30,7 +30,7 @@ export async function GET(
 
     // Fetch cards
     const { data: cards, error: cardsError } = await (supabase as any)
-      .from('cards')
+      .from('flowfox_cards')
       .select('*')
       .eq('board_id', boardId)
       .eq('is_archived', false)
@@ -48,7 +48,7 @@ export async function GET(
     if (cardIds.length > 0) {
       // Fetch card labels
       const { data: cardLabels } = await (supabase as any)
-        .from('card_labels')
+        .from('flowfox_card_labels')
         .select('card_id, labels(id, name, color)')
         .in('card_id', cardIds)
 
@@ -63,7 +63,7 @@ export async function GET(
 
       // Fetch card assignees
       const { data: cardAssignees } = await (supabase as any)
-        .from('card_assignments')
+        .from('flowfox_card_assignments')
         .select('card_id, users(id, email, full_name, avatar_url)')
         .in('card_id', cardIds)
 
@@ -78,7 +78,7 @@ export async function GET(
 
       // Fetch subtasks
       const { data: subtasks } = await (supabase as any)
-        .from('subtasks')
+        .from('flowfox_subtasks')
         .select('card_id, is_completed')
         .in('card_id', cardIds)
 

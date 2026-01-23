@@ -18,12 +18,12 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') // 'personal', 'organization', or null for all
 
-    console.log('Fetching boards for user:', session.user.id)
+    console.log('Fetching boards for user:', session.user.email)
 
     // Query boards where user is a member (using admin client, can't use RLS-based views)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let { data: boards, error } = await (supabase as any)
-      .from('boards')
+      .from('flowfox_boards')
       .select(`
         id,
         workspace_id,
@@ -35,9 +35,9 @@ export async function GET(request: Request) {
         created_by,
         created_at,
         updated_at,
-        board_members!inner(user_id)
+        flowfox_board_members!inner(user_id)
       `)
-      .eq('board_members.user_id', session.user.id)
+      .eq('flowfox_board_members.user_id', session.user.email)
       .order('created_at', { ascending: false })
 
     console.log('Boards via membership join:', { count: boards?.length || 0, error: error?.message })
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await (supabase as any)
-        .from('boards')
+        .from('flowfox_boards')
         .select(`
           id,
           workspace_id,
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
           created_at,
           updated_at
         `)
-        .eq('created_by', session.user.id)
+        .eq('created_by', session.user.email)
         .order('created_at', { ascending: false })
 
       boards = result.data
@@ -108,7 +108,7 @@ async function ensureDevUser(supabase: ReturnType<typeof createAdminClient>) {
   // Check if user exists in public.users
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existingUser } = await (supabase as any)
-    .from('users')
+    .from('user_profiles')
     .select('id')
     .eq('id', DEV_USER_ID)
     .single()
@@ -129,7 +129,7 @@ async function ensureDevUser(supabase: ReturnType<typeof createAdminClient>) {
 
     // Then create in public.users table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: userError } = await (supabase as any).from('users').insert({
+    const { error: userError } = await (supabase as any).from('user_profiles').insert({
       id: DEV_USER_ID,
       email: 'dev@thoughtfox.io',
       full_name: 'Dev User',
@@ -158,7 +158,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { name, description, is_personal = false } = body
 
-    const userId = session.user.id
+    const userId = session.user.email
 
     // Generate slug from name
     const slug = name
@@ -184,7 +184,7 @@ export async function POST(request: Request) {
       // Get ThoughtFox organizational workspace
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: workspaces, error: wsError } = await (supabase as any)
-        .from('workspaces')
+        .from('flowfox_workspaces')
         .select('id')
         .eq('type', 'organization')
         .eq('slug', 'thoughtfox')
@@ -194,7 +194,7 @@ export async function POST(request: Request) {
         // Create ThoughtFox workspace if it doesn't exist
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: newWorkspace, error: createWsError } = await (supabase as any)
-          .from('workspaces')
+          .from('flowfox_workspaces')
           .insert({
             name: 'ThoughtFox',
             slug: 'thoughtfox',
@@ -210,7 +210,7 @@ export async function POST(request: Request) {
 
         // Add user as workspace owner
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('workspace_members').insert({
+        await (supabase as any).from('flowfox_workspace_members').insert({
           workspace_id: workspaceId,
           user_id: userId,
           role: 'owner',
@@ -223,7 +223,7 @@ export async function POST(request: Request) {
     // Create the board
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: board, error: boardError } = await (supabase as any)
-      .from('boards')
+      .from('flowfox_boards')
       .insert({
         workspace_id: workspaceId,
         name,
@@ -242,7 +242,7 @@ export async function POST(request: Request) {
 
     // Add user as board admin
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('board_members').insert({
+    await (supabase as any).from('flowfox_board_members').insert({
       board_id: board.id,
       user_id: userId,
       role: 'admin',
@@ -258,7 +258,7 @@ export async function POST(request: Request) {
     ]
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('columns').insert(
+    await (supabase as any).from('flowfox_columns').insert(
       defaultColumns.map((col) => ({
         board_id: board.id,
         ...col,

@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   try {
     const session = await auth()
 
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -25,11 +25,11 @@ export async function GET(request: Request) {
     const boardId = searchParams.get('board_id')
 
     let query = supabase
-      .from('workspace_members')
+      .from('flowfox_workspace_members')
       .select(`
         user_id,
         role,
-        users:user_id (
+        user_profiles:user_id (
           id,
           full_name,
           email,
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       // Get members via board's workspace
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       query = (query as any).eq('workspace_id', supabase
-        .from('boards')
+        .from('flowfox_boards')
         .select('workspace_id')
         .eq('id', boardId)
         .single()
@@ -53,10 +53,10 @@ export async function GET(request: Request) {
     } else {
       // Get members of all workspaces user belongs to
       const { data: userWorkspaces } = await supabase
-        .from('workspace_members')
+        .from('flowfox_workspace_members')
         .select('workspace_id')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .eq('user_id', session.user.id) as any
+        .eq('user_id', session.user.email) as any
 
       if (userWorkspaces && userWorkspaces.length > 0) {
         const workspaceIds = userWorkspaces.map((w: { workspace_id: string }) => w.workspace_id)
@@ -74,11 +74,11 @@ export async function GET(request: Request) {
     }
 
     // Transform data to simpler format
-    const formattedMembers = members?.map((m: { users: { id: string; full_name: string; email: string; avatar_url: string | null }; role: string }) => ({
-      id: m.users.id,
-      full_name: m.users.full_name,
-      email: m.users.email,
-      avatar_url: m.users.avatar_url,
+    const formattedMembers = members?.map((m: { user_profiles: { id: string; full_name: string; email: string; avatar_url: string | null }; role: string }) => ({
+      id: m.user_profiles.id,
+      full_name: m.user_profiles.full_name,
+      email: m.user_profiles.email,
+      avatar_url: m.user_profiles.avatar_url,
       role: m.role,
     })) || []
 

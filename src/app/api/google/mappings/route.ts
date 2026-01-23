@@ -14,7 +14,7 @@ export async function GET() {
   try {
     const session = await auth()
 
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -27,13 +27,13 @@ export async function GET() {
       .from('google_task_list_mappings')
       .select(`
         *,
-        boards (
+        flowfox_boards (
           id,
           name,
           description
         )
       `)
-      .eq('user_id', session.user.id)
+      .eq('user_id', session.user.email)
 
     if (error) throw error
 
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   try {
     const session = await auth()
 
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     const { data: mapping, error } = await supabase
       .from('google_task_list_mappings')
       .insert({
-        user_id: session.user.id,
+        user_id: session.user.email,
         board_id: boardId,
         google_task_list_id: googleTaskListId,
         google_task_list_title: googleTaskListTitle,
@@ -98,7 +98,7 @@ export async function DELETE(request: Request) {
   try {
     const session = await auth()
 
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -121,7 +121,7 @@ export async function DELETE(request: Request) {
       .from('google_task_list_mappings')
       .delete()
       .eq('id', mappingId)
-      .eq('user_id', session.user.id)
+      .eq('user_id', session.user.email)
 
     if (error) throw error
 

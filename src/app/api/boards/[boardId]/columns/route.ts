@@ -14,7 +14,7 @@ export async function POST(
     const { name, position } = body
 
     const { data: column, error } = await (supabase as any)
-      .from('columns')
+      .from('flowfox_columns')
       .insert({
         board_id: boardId,
         name,

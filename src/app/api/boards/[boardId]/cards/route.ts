@@ -1,8 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
-
-// Dev user ID - must match the one in /api/boards/route.ts
-const DEV_USER_ID = 'db297104-c70f-4e4c-80ae-343849c9c02f'
 
 // POST /api/boards/[boardId]/cards - Create a new card
 export async function POST(
@@ -10,6 +8,15 @@ export async function POST(
   { params }: { params: Promise<{ boardId: string }> }
 ) {
   try {
+    const session = await auth()
+
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
     const { boardId } = await params
     const supabase = createAdminClient()
     const body = await request.json()
@@ -17,13 +24,13 @@ export async function POST(
     const { column_id, title, position } = body
 
     const { data: card, error } = await (supabase as any)
-      .from('cards')
+      .from('flowfox_cards')
       .insert({
         board_id: boardId,
         column_id,
         title,
         position,
-        created_by: DEV_USER_ID,
+        created_by: session.user.email,
       })
       .select()
       .single()
@@ -59,7 +66,7 @@ export async function PATCH(
     const { id, column_id, position } = body
 
     const { error } = await (supabase as any)
-      .from('cards')
+      .from('flowfox_cards')
       .update({
         column_id,
         position,

@@ -103,16 +103,16 @@ export const authConfig = {
       //   return false
       // }
 
-      // Create or update user in Supabase users table
+      // Create or update user in Supabase user_profiles table
       if (profile?.email && profile?.sub) {
         try {
           const supabase = createAdminClient()
 
           // Upsert user record (create if doesn't exist, update if exists)
           await supabase
-            .from('users')
+            .from('user_profiles')
             .upsert({
-              id: profile.sub, // Use Google ID as user ID
+              id: profile.email, // Use email as user ID (StratOps pattern)
               email: profile.email,
               full_name: profile.name || profile.email.split('@')[0],
               avatar_url: profile.picture || null,
