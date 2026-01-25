@@ -36,11 +36,31 @@ import {
   Trash2,
   Archive,
   X,
+  Users,
+  Plus,
+  Check,
 } from 'lucide-react'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { SubtaskList } from './subtask-list'
-import type { BoardCard, CardPriority } from '@/types/board'
+import type { BoardCard, CardPriority, CardAssignee } from '@/types/board'
+
+interface WorkspaceMember {
+  id: string
+  full_name: string
+  email: string
+  avatar_url: string | null
+  role: string
+}
 
 const PRIORITY_OPTIONS: { value: CardPriority; label: string; color: string }[] = [
   { value: 'low', label: 'Low', color: 'bg-slate-500' },
@@ -72,6 +92,10 @@ export function CardDetailPanel({
   const [dueDate, setDueDate] = useState<Date | undefined>()
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const [assignees, setAssignees] = useState<CardAssignee[]>([])
+  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([])
+  const [isAssigneePopoverOpen, setIsAssigneePopoverOpen] = useState(false)
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false)
 
   // Reset form when card changes
   useEffect(() => {
@@ -80,9 +104,28 @@ export function CardDetailPanel({
       setDescription(card.description || '')
       setPriority(card.priority)
       setDueDate(card.due_date ? new Date(card.due_date) : undefined)
+      setAssignees(card.assignees || [])
       setHasChanges(false)
     }
   }, [card])
+
+  // Fetch workspace members when panel opens
+  useEffect(() => {
+    if (isOpen && card && workspaceMembers.length === 0) {
+      setIsLoadingMembers(true)
+      fetch(`/api/workspace-members?board_id=${card.board_id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          setWorkspaceMembers(data.members || [])
+        })
+        .catch((error) => {
+          console.error('Failed to fetch workspace members:', error)
+        })
+        .finally(() => {
+          setIsLoadingMembers(false)
+        })
+    }
+  }, [isOpen, card, workspaceMembers.length])
 
   // Track changes
   useEffect(() => {
@@ -140,6 +183,65 @@ export function CardDetailPanel({
 
   const clearDueDate = () => {
     setDueDate(undefined)
+  }
+
+  const handleAddAssignee = async (member: WorkspaceMember) => {
+    if (!card) return
+    // Check if already assigned
+    if (assignees.some((a) => a.id === member.id)) {
+      setIsAssigneePopoverOpen(false)
+      return
+    }
+
+    try {
+      const response = await fetch(
+        `/api/boards/${card.board_id}/cards/${card.id}/assignments`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: member.id }),
+        }
+      )
+
+      if (!response.ok) throw new Error('Failed to add assignee')
+
+      const newAssignee: CardAssignee = {
+        id: member.id,
+        email: member.email,
+        full_name: member.full_name,
+        avatar_url: member.avatar_url,
+      }
+      setAssignees((prev) => [...prev, newAssignee])
+      setIsAssigneePopoverOpen(false)
+    } catch (error) {
+      console.error('Failed to add assignee:', error)
+    }
+  }
+
+  const handleRemoveAssignee = async (userId: string) => {
+    if (!card) return
+
+    try {
+      const response = await fetch(
+        `/api/boards/${card.board_id}/cards/${card.id}/assignments?user_id=${userId}`,
+        { method: 'DELETE' }
+      )
+
+      if (!response.ok) throw new Error('Failed to remove assignee')
+
+      setAssignees((prev) => prev.filter((a) => a.id !== userId))
+    } catch (error) {
+      console.error('Failed to remove assignee:', error)
+    }
+  }
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
   }
 
   if (!card) return null
@@ -211,6 +313,88 @@ export function CardDetailPanel({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Assignees */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Assignees
+            </Label>
+            <div className="space-y-2">
+              {/* Current assignees */}
+              {assignees.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {assignees.map((assignee) => (
+                    <div
+                      key={assignee.id}
+                      className="flex items-center gap-2 bg-muted rounded-full pl-1 pr-2 py-1"
+                    >
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={assignee.avatar_url || undefined} />
+                        <AvatarFallback className="text-xs bg-[#FF6B35] text-white">
+                          {getInitials(assignee.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm">{assignee.full_name}</span>
+                      <button
+                        onClick={() => handleRemoveAssignee(assignee.id)}
+                        className="ml-1 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Add assignee button */}
+              <Popover open={isAssigneePopoverOpen} onOpenChange={setIsAssigneePopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add assignee
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search members..." />
+                    <CommandList>
+                      <CommandEmpty>
+                        {isLoadingMembers ? 'Loading...' : 'No members found.'}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {workspaceMembers.map((member) => {
+                          const isAssigned = assignees.some((a) => a.id === member.id)
+                          return (
+                            <CommandItem
+                              key={member.id}
+                              onSelect={() => handleAddAssignee(member)}
+                              className="flex items-center gap-2"
+                            >
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={member.avatar_url || undefined} />
+                                <AvatarFallback className="text-xs bg-slate-500 text-white">
+                                  {getInitials(member.full_name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 truncate">
+                                <p className="text-sm font-medium">{member.full_name}</p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {member.email}
+                                </p>
+                              </div>
+                              {isAssigned && (
+                                <Check className="h-4 w-4 text-[#FF6B35]" />
+                              )}
+                            </CommandItem>
+                          )
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
           {/* Due Date */}
