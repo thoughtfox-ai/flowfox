@@ -17,12 +17,13 @@ export async function GET(request: Request) {
     const supabase = createAdminClient()
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') // 'personal', 'organization', or null for all
+    const archived = searchParams.get('archived') === 'true' // Filter for archived boards
 
     console.log('Fetching boards for user:', session.user.email)
 
     // Query boards where user is a member (using admin client, can't use RLS-based views)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let { data: boards, error } = await (supabase as any)
+    let query = (supabase as any)
       .from('flowfox_boards')
       .select(`
         id,
@@ -38,7 +39,11 @@ export async function GET(request: Request) {
         flowfox_board_members!inner(user_id)
       `)
       .eq('flowfox_board_members.user_id', session.user.email)
+      .eq('is_archived', archived)
       .order('created_at', { ascending: false })
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let { data: boards, error } = await query
 
     console.log('Boards via membership join:', { count: boards?.length || 0, error: error?.message })
 
@@ -62,6 +67,7 @@ export async function GET(request: Request) {
           updated_at
         `)
         .eq('created_by', session.user.email)
+        .eq('is_archived', archived)
         .order('created_at', { ascending: false })
 
       boards = result.data
@@ -247,6 +253,31 @@ export async function POST(request: Request) {
       user_id: userId,
       role: 'admin',
     })
+
+    // For team boards, automatically add all workspace members with appropriate roles
+    if (!is_personal) {
+      // Fetch all workspace members (excluding the creator who was already added)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: workspaceMembers } = await (supabase as any)
+        .from('flowfox_workspace_members')
+        .select('user_id, role')
+        .eq('workspace_id', workspaceId)
+        .neq('user_id', userId)
+
+      if (workspaceMembers && workspaceMembers.length > 0) {
+        // Map workspace roles to board roles:
+        // - owner/admin -> admin rights
+        // - member -> contributor rights (can be overwritten to viewer)
+        const boardMembers = workspaceMembers.map((wm: { user_id: string; role: string }) => ({
+          board_id: board.id,
+          user_id: wm.user_id,
+          role: wm.role === 'owner' || wm.role === 'admin' ? 'admin' : 'contributor',
+        }))
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('flowfox_board_members').insert(boardMembers)
+      }
+    }
 
     // Create default columns
     const defaultColumns = [

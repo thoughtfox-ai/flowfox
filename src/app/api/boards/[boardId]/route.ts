@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
 
 // GET /api/boards/[boardId] - Get board with columns and cards
@@ -109,6 +110,97 @@ export async function GET(
     console.error('Failed to fetch board:', error)
     return NextResponse.json(
       { error: 'Failed to fetch board' },
+      { status: 500 }
+    )
+  }
+}
+
+// PATCH /api/boards/[boardId] - Update board (name, description, archive status)
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ boardId: string }> }
+) {
+  try {
+    const session = await auth()
+
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    const { boardId } = await params
+    const supabase = createAdminClient()
+    const body = await request.json()
+    const { name, description, is_archived } = body
+
+    // Build update object with only provided fields
+    const updates: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    }
+    if (name !== undefined) updates.name = name
+    if (description !== undefined) updates.description = description
+    if (is_archived !== undefined) updates.is_archived = is_archived
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: board, error } = await (supabase as any)
+      .from('flowfox_boards')
+      .update(updates)
+      .eq('id', boardId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating board:', error)
+      throw error
+    }
+
+    return NextResponse.json({ board })
+  } catch (error) {
+    console.error('Failed to update board:', error)
+    return NextResponse.json(
+      { error: 'Failed to update board' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/boards/[boardId] - Permanently delete board
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ boardId: string }> }
+) {
+  try {
+    const session = await auth()
+
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    const { boardId } = await params
+    const supabase = createAdminClient()
+
+    // Delete the board (cascades to cards, columns, etc.)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from('flowfox_boards')
+      .delete()
+      .eq('id', boardId)
+
+    if (error) {
+      console.error('Error deleting board:', error)
+      throw error
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Failed to delete board:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete board' },
       { status: 500 }
     )
   }
