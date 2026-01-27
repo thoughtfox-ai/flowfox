@@ -52,9 +52,18 @@ export interface Board {
   description: string | null
   slug: string
   is_archived: boolean
+  is_personal: boolean
   created_by: string
   created_at: string
   updated_at: string
+}
+
+export interface BoardMember {
+  id: string
+  email: string
+  full_name: string
+  avatar_url: string | null
+  role: 'admin' | 'contributor' | 'viewer'
 }
 
 export interface BoardWithDetails extends Board {

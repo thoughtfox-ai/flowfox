@@ -34,6 +34,7 @@ import {
   User,
   Sun,
   Plus,
+  Archive,
 } from 'lucide-react'
 
 const navigation = [
@@ -42,6 +43,7 @@ const navigation = [
     items: [
       { title: 'My Day', url: '/', icon: Sun },
       { title: 'Boards', url: '/boards', icon: Kanban },
+      { title: 'Archive', url: '/archive', icon: Archive },
     ],
   },
   {
